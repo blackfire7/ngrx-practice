@@ -21,11 +21,17 @@ import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {RouterModule, Routes} from '@angular/router';
-import {CoursesResolver} from "./courses.resolver";
+import {CoursesResolver} from "./services/courses.resolver";
 import {EffectsModule} from "@ngrx/effects";
 import {CoursesEffects} from "./courses.effects";
 import {StoreModule} from "@ngrx/store";
 import {coursesReducer} from "./reducer/course.reducers";
+import {EntityDataService, EntityDefinitionService, EntityMetadataMap} from "@ngrx/data";
+import {CourseEntityService} from "./services/course-entity.service";
+import {CoursesDataService} from "./services/courses-data.service";
+import {compareCourses} from "./model/course";
+import {compareLessons} from "./model/lesson";
+import {LessonEntityService} from "./services/lesson-entity.service";
 
 
 export const coursesRoutes: Routes = [
@@ -39,9 +45,27 @@ export const coursesRoutes: Routes = [
   },
   {
     path: ':courseUrl',
-    component: CourseComponent
+    component: CourseComponent,
+    resolve: {
+      courses: CoursesResolver
+    }
   }
 ];
+
+const entityMetadata: EntityMetadataMap = {
+  Course: {
+    sortComparer: compareCourses,
+    entityDispatcherOptions: {
+      optimisticUpdate: true
+    }
+  },
+  Lesson: {
+    sortComparer: compareLessons,
+    entityDispatcherOptions: {
+      optimisticUpdate: true
+    }
+  }
+}
 
 
 @NgModule({
@@ -80,13 +104,17 @@ export const coursesRoutes: Routes = [
   ],
   providers: [
     CoursesHttpService,
-    CoursesResolver
+    CourseEntityService,
+    LessonEntityService,
+    CoursesResolver,
+    CoursesDataService
   ]
 })
 export class CoursesModule {
 
-  constructor() {
-
+  constructor(private eds: EntityDefinitionService, private entityDataService: EntityDataService, private courseDataService: CoursesDataService) {
+    eds.registerMetadataMap(entityMetadata);
+    entityDataService.registerService('Course', courseDataService);
   }
 
 
